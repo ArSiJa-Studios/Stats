@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Minecraft Ticker</title>
+  <style>
+    body { background: #111; margin: 0; }
+    #ticker {
+      white-space: nowrap;
+      overflow: hidden;
+      width: 100%;
+      background: black;
+      color: lime;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 18px;
+      transform: translateX(100%);
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div id="ticker">Lade Daten...</div>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTevjgtiM5zWIsV7uAF67Mihd7Wz8vSifMXZed1MIaiZXZaQOkaiDdkS1rR2XARuOeIf8iBzxxC9J9K/pubhtml";
+
+    async function fetchData() {
+      const response = await fetch(sheetURL);
+      const data = await response.text();
+      const rows = data.split("\n").slice(1);
+      let tickerText = "";
+
+      rows.forEach(row => {
+        const [item, preis] = row.split(",");
+        if (item && preis) {
+          tickerText += `${item.trim()}: ${preis.trim()} | `;
+        }
+      });
+
+      document.getElementById("ticker").textContent = tickerText;
+    }
+
+    function startTicker() {
+      const ticker = document.getElementById("ticker");
+      let pos = window.innerWidth;
+
+      function move() {
+        pos--;
+        if (pos < -ticker.offsetWidth) {
+          pos = window.innerWidth;
+        }
+        ticker.style.transform = `translateX(${pos}px)`;
+        requestAnimationFrame(move);
+      }
+      move();
+    }
+
+    fetchData().then(startTicker);
+    setInterval(fetchData, 30000);
+  </script>
+</body>
+</html>
