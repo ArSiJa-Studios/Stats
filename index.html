@@ -1,63 +1,74 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Minecraft Ticker</title>
-  <style>
-    body { background: #111; margin: 0; }
-    #ticker {
-      white-space: nowrap;
-      overflow: hidden;
-      width: 100%;
-      background: black;
-      color: lime;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 18px;
-      transform: translateX(100%);
-      display: inline-block;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Server Finanzübersicht</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; max-width: 600px; }
+  th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+  th { background-color: #f4f4f4; }
+  .up { color: green; }
+  .down { color: red; }
+</style>
 </head>
 <body>
-  <div id="ticker">Lade Daten...</div>
 
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTevjgtiM5zWIsV7uAF67Mihd7Wz8vSifMXZed1MIaiZXZaQOkaiDdkS1rR2XARuOeIf8iBzxxC9J9K/pubhtml";
+<h1>Server Finanzübersicht</h1>
+<table id="finance-table">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Preis</th>
+      <th>Trend</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-    async function fetchData() {
-      const response = await fetch(sheetURL);
-      const data = await response.text();
-      const rows = data.split("\n").slice(1);
-      let tickerText = "";
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTevjgtiM5zWIsV7uAF67Mihd7Wz8vSifMXZed1MIaiZXZaQOkaiDdkS1rR2XARuOeIf8iBzxxC9J9K/pub?output=csv";
+let previousData = {};
 
-      rows.forEach(row => {
-        const [item, preis] = row.split(",");
-        if (item && preis) {
-          tickerText += `${item.trim()}: ${preis.trim()} | `;
-        }
-      });
+async function fetchData() {
+  const response = await fetch(sheetURL);
+  const csvText = await response.text();
+  const rows = csvText.trim().split("\n").slice(1); // erste Zeile = Header
+  const newData = {};
+  
+  rows.forEach(row => {
+    const [item, price] = row.split(",");
+    newData[item] = parseFloat(price);
+  });
 
-      document.getElementById("ticker").textContent = tickerText;
+  updateTable(newData);
+  previousData = newData;
+}
+
+function updateTable(data) {
+  const tbody = document.querySelector("#finance-table tbody");
+  tbody.innerHTML = "";
+
+  for (const item in data) {
+    const price = data[item];
+    const prevPrice = previousData[item];
+    let trend = "";
+
+    if (prevPrice !== undefined) {
+      if (price > prevPrice) trend = "↑";
+      else if (price < prevPrice) trend = "↓";
     }
 
-    function startTicker() {
-      const ticker = document.getElementById("ticker");
-      let pos = window.innerWidth;
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${item}</td><td>${price}</td><td class="${trend === '↑' ? 'up' : 'down'}">${trend}</td>`;
+    tbody.appendChild(row);
+  }
+}
 
-      function move() {
-        pos--;
-        if (pos < -ticker.offsetWidth) {
-          pos = window.innerWidth;
-        }
-        ticker.style.transform = `translateX(${pos}px)`;
-        requestAnimationFrame(move);
-      }
-      move();
-    }
+// Live-Update alle 5 Sekunden
+fetchData();
+setInterval(fetchData, 5000);
+</script>
 
-    fetchData().then(startTicker);
-    setInterval(fetchData, 30000);
-  </script>
 </body>
 </html>
