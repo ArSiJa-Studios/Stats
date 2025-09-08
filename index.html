@@ -28,18 +28,14 @@
 
 <script>
 const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTevjgtiM5zWIsV7uAF67Mihd7Wz8vSifMXZed1MIaiZXZaQOkaiDdkS1rR2XARuOeIf8iBzxxC9J9K/pub?output=csv";
-
-// Speichert vorherige Preise
 let previousData = {};
-// Speichert den aktuellen Trend, der beibehalten wird
-let currentTrend = {};
 
 async function fetchData() {
   const response = await fetch(sheetURL);
   const csvText = await response.text();
-  const rows = csvText.trim().split("\n").slice(1);
+  const rows = csvText.trim().split("\n").slice(1); // erste Zeile = Header
   const newData = {};
-
+  
   rows.forEach(row => {
     const [item, price] = row.split(",");
     newData[item] = parseFloat(price);
@@ -56,20 +52,15 @@ function updateTable(data) {
   for (const item in data) {
     const price = data[item];
     const prevPrice = previousData[item];
+    let trend = "";
 
-    // Trend nur ändern, wenn sich der Preis geändert hat
     if (prevPrice !== undefined) {
-      if (price > prevPrice) currentTrend[item] = "↑";
-      else if (price < prevPrice) currentTrend[item] = "↓";
-      // Wenn gleich, bleibt der Trend unverändert
-    } else {
-      currentTrend[item] = ""; // Neue Items
+      if (price > prevPrice) trend = "↑";
+      else if (price < prevPrice) trend = "↓";
     }
 
     const row = document.createElement("tr");
-    row.innerHTML = `<td>${item}</td>
-                     <td>${price}</td>
-                     <td class="${currentTrend[item] === '↑' ? 'up' : 'down'}">${currentTrend[item]}</td>`;
+    row.innerHTML = `<td>${item}</td><td>${price}</td><td class="${trend === '↑' ? 'up' : 'down'}">${trend}</td>`;
     tbody.appendChild(row);
   }
 }
